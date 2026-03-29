@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حساب أيام الجيش - العمالة والإجازات</title>
+    <link rel="stylesheet" href="./dist/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Cairo', system-ui, sans-serif;
+        }
+
+        .military-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
+        }
+
+        .card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+        }
+
+        .balance-positive {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .date-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        @media (min-width: 640px) {
+            .date-display {
+                font-size: 3rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .date-display {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="military-bg min-h-screen text-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-10 gap-4">
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div
+                    class="w-10 h-10 sm:w-14 sm:h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-lg">
+                    🪖
+                </div>
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">حساب أيام الجيش</h1>
+                    <p class="text-emerald-400 text-sm sm:text-lg">نظام العمالة ١٥ يوم + إجازة ١٥ يوم</p>
+                </div>
+            </div>
+
+            <div onclick="resetAll()"
+                class="cursor-pointer flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-medium transition-all">
+                <i class="fas fa-redo"></i>
+                <span>مسح كل البيانات</span>
+            </div>
+        </div>
+
+        <!-- Current Date Card -->
+        <div class="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 card">
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+                <div>
+                    <p class="text-emerald-400 text-sm font-medium mb-2 flex items-center gap-2">
+                        <i class="fas fa-calendar-day"></i>
+                        اليوم الحالي (يتم تحديثه تلقائياً)
+                    </p>
+                    <div id="current-date" class="date-display text-4xl sm:text-5xl md:text-7xl font-bold text-white">
+                    </div>
+                    <div id="current-date-ar" class="text-xl sm:text-2xl md:text-3xl text-emerald-300 mt-1"></div>
+                </div>
+
+                <div class="w-full sm:w-auto">
+                    <button onclick="updateCurrentDate()"
+                        class="bg-emerald-500 hover:bg-emerald-600 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl font-semibold flex items-center gap-3 transition-all active:scale-95 w-full sm:w-auto justify-center">
+                        <i class="fas fa-sync-alt"></i>
+                        تحديث اليوم
+                    </button>
+                    <p id="days-since-start" class="mt-4 text-xs sm:text-sm text-slate-400 text-center sm:text-left">
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+            <!-- Service Summary -->
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 card">
+                <h2 class="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-3">
+                    <i class="fas fa-clock"></i>
+                    ملخص الخدمة
+                </h2>
+
+                <div class="space-y-6 sm:space-y-8">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div class="flex items-center gap-3 sm:gap-4">
+                            <div
+                                class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-lg sm:text-xl">
+                                📅</div>
+                            <div>
+                                <p class="text-slate-400 text-sm">تاريخ البداية</p>
+                                <p id="start-date" class="text-2xl sm:text-3xl font-bold">٢٥ فبراير ٢٠٢٦</p>
+                            </div>
+                        </div>
+                        <div class="text-left sm:text-right w-full sm:w-auto">
+                            <p class="text-emerald-400 text-xs sm:text-sm">إجمالي أيام الخدمة حتى الآن</p>
+                            <p id="total-service-days" class="text-4xl sm:text-5xl font-bold text-white">٠</p>
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-white/10"></div>
+
+                    <!-- Work & Leave Totals -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <!-- Work -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="flex items-center gap-2 text-amber-400 text-sm sm:text-base">
+                                    <i class="fas fa-hard-hat"></i>
+                                    أيام العمالة
+                                </p>
+                                <button onclick="addDays('work', 1)"
+                                    class="bg-amber-500 hover:bg-amber-600 text-xs px-3 sm:px-4 py-1 rounded-xl flex items-center gap-1 transition-all">
+                                    <i class="fas fa-plus"></i> +١
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-3 sm:gap-4">
+                                <input id="work-days-input" oninput="updateBalance()" type="number" value="0"
+                                    class="bg-white/10 text-4xl sm:text-5xl font-bold w-24 sm:w-28 text-center rounded-2xl py-3 sm:py-4 focus:outline-none focus:ring-2 focus:ring-amber-400 text-amber-100">
+                                <div class="text-3xl sm:text-4xl text-amber-400">يوم</div>
+                            </div>
+                            <p id="work-note" class="text-xs text-slate-400 mt-2">الأيام الفعلية التي نزلها الظابط</p>
+                        </div>
+
+                        <!-- Leave -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="flex items-center gap-2 text-emerald-400 text-sm sm:text-base">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                    أيام الإجازة
+                                </p>
+                                <button onclick="addDays('leave', 1)"
+                                    class="bg-emerald-500 hover:bg-emerald-600 text-xs px-3 sm:px-4 py-1 rounded-xl flex items-center gap-1 transition-all">
+                                    <i class="fas fa-plus"></i> +١
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-3 sm:gap-4">
+                                <input id="leave-days-input" oninput="updateBalance()" type="number" value="0"
+                                    class="bg-white/10 text-4xl sm:text-5xl font-bold w-24 sm:w-28 text-center rounded-2xl py-3 sm:py-4 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-emerald-100">
+                                <div class="text-3xl sm:text-4xl text-emerald-400">يوم</div>
+                            </div>
+                            <p id="leave-note" class="text-xs text-slate-400 mt-2">الأيام الفعلية التي نزلها الظابط</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Card -->
+            <div class="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 card flex flex-col">
+                <h2 class="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-3">
+                    <i class="fas fa-balance-scale"></i>
+                    الحساب مع الظابط
+                </h2>
+
+                <div id="balance-display" class="flex-1 flex flex-col items-center justify-center text-center">
+                    <!-- JS will inject here -->
+                    <div id="balance-main" class="text-5xl sm:text-6xl md:text-7xl font-bold mb-4"></div>
+                    <div id="balance-text" class="text-2xl sm:text-3xl font-medium"></div>
+                    <div id="balance-sub" class="mt-4 sm:mt-8 text-sm sm:text-base sm:text-xl max-w-xs"></div>
+                </div>
+
+                <div class="text-xs text-slate-400 text-center mt-auto pt-4 sm:pt-6 border-t border-white/10">
+                    مثال: لو عملت ٢١ عمالة و ١٥ إجازة → ليك ٦ أيام إجازة عند الظابط
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8 sm:mt-10 bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8">
+            <h3 class="font-semibold mb-4 sm:mb-6 text-base sm:text-lg">إضافة سريعة (حسب ما ينزله الظابط)</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <button onclick="addDays('work', 15)"
+                    class="bg-amber-500 hover:bg-amber-600 py-4 sm:py-6 rounded-2xl sm:rounded-3xl text-sm sm:text-lg font-semibold flex flex-col items-center gap-2 transition-all">
+                    <span class="text-2xl sm:text-3xl">🪖</span>
+                    +١٥ يوم عمالة
+                </button>
+                <button onclick="addDays('work', 20)"
+                    class="bg-amber-500 hover:bg-amber-600 py-4 sm:py-6 rounded-2xl sm:rounded-3xl text-sm sm:text-lg font-semibold flex flex-col items-center gap-2 transition-all">
+                    <span class="text-2xl sm:text-3xl">🪖</span>
+                    +٢٠ يوم عمالة
+                </button>
+                <button onclick="addDays('leave', 15)"
+                    class="bg-emerald-500 hover:bg-emerald-600 py-4 sm:py-6 rounded-2xl sm:rounded-3xl text-sm sm:text-lg font-semibold flex flex-col items-center gap-2 transition-all">
+                    <span class="text-2xl sm:text-3xl">🏖️</span>
+                    +١٥ يوم إجازة
+                </button>
+                <button onclick="addDays('leave', 20)"
+                    class="bg-emerald-500 hover:bg-emerald-600 py-4 sm:py-6 rounded-2xl sm:rounded-3xl text-sm sm:text-lg font-semibold flex flex-col items-center gap-2 transition-all">
+                    <span class="text-2xl sm:text-3xl">🏖️</span>
+                    +٢٠ يوم إجازة
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="showAddPeriodModal('work')"
+                    class="bg-amber-500 hover:bg-amber-600 py-4 rounded-2xl text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition-all">
+                    <i class="fas fa-plus"></i>
+                    إضافة عمالة مخصصة
+                </button>
+                <button onclick="showAddPeriodModal('leave')"
+                    class="bg-emerald-500 hover:bg-emerald-600 py-4 rounded-2xl text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition-all">
+                    <i class="fas fa-plus"></i>
+                    إضافة إجازة مخصصة
+                </button>
+            </div>
+            <p class="text-center text-xs text-slate-400 mt-4 sm:mt-6">اضغط على الأزرار حسب ما يقرره الظابط في كل مرة
+            </p>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="mt-8 sm:mt-12 text-center text-slate-400 text-xs sm:text-sm">
+            <p>البرنامج يعمل ١٠٠٪ أوتوماتيكي • يحفظ البيانات تلقائياً • يحدث اليوم كل يوم</p>
+            <p class="mt-2">بدأت الخدمة: ٢٥/٢/٢٠٢٦ • المفروض تخلص: ١/٣/٢٠٢٦ (حسب النظام)</p>
+            <button onclick="showHistory()"
+                class="mt-4 sm:mt-6 text-emerald-400 hover:text-emerald-300 flex items-center gap-2 mx-auto">
+                <i class="fas fa-history"></i>
+                <span>عرض السجل الكامل</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" onclick="if(event.target.id === 'history-modal') hideHistory()"
+        class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()"
+            class="bg-slate-900 w-full max-w-sm sm:max-w-lg mx-auto rounded-2xl sm:rounded-3xl p-6 sm:p-8">
+            <div class="flex justify-between mb-4 sm:mb-6">
+                <h3 class="text-lg sm:text-2xl font-bold">سجل الإضافات</h3>
+                <i onclick="hideHistory()" class="fas fa-times text-2xl sm:text-3xl cursor-pointer"></i>
+            </div>
+            <div id="history-list" class="max-h-80 sm:max-h-96 overflow-auto space-y-3 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Add Period Modal -->
+    <div id="add-period-modal" onclick="if(event.target.id === 'add-period-modal') hideAddPeriodModal()"
+        class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()"
+            class="bg-slate-900 w-full max-w-sm sm:max-w-md mx-auto rounded-2xl sm:rounded-3xl p-6 sm:p-8">
+            <div class="flex justify-between mb-4 sm:mb-6">
+                <h3 class="text-lg sm:text-2xl font-bold" id="modal-title">إضافة عمالة جديدة</h3>
+                <i onclick="hideAddPeriodModal()" class="fas fa-times text-2xl sm:text-3xl cursor-pointer"></i>
+            </div>
+            <form id="add-period-form" class="space-y-4">
+                <input type="hidden" id="edit-id" value="">
+                <input type="hidden" id="edit-type" value="">
+                <div>
+                    <label class="block text-sm font-medium mb-2">اسم الفترة</label>
+                    <input type="text" id="period-name"
+                        class="w-full bg-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        placeholder="مثال: عمالة 1" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">تاريخ البداية</label>
+                    <input type="date" id="period-start"
+                        class="w-full bg-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">عدد الأيام</label>
+                    <input type="number" id="period-days"
+                        class="w-full bg-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        placeholder="15" required>
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit"
+                        class="flex-1 bg-emerald-500 hover:bg-emerald-600 py-3 rounded-xl font-semibold transition-all">حفظ</button>
+                    <button type="button" onclick="hideAddPeriodModal()"
+                        class="flex-1 bg-slate-600 hover:bg-slate-700 py-3 rounded-xl font-semibold transition-all">إلغاء</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <div>
+        <h3 class="mt-8 sm:mt-12 text-center text-slate-400 text-xs sm:text-sm">powered by Engine JavaScript</h3>
+        <h4 class="mt-8 sm:mt-12 text-center text-slate-400 text-xs sm:text-sm">Generated by ENG Abdelrhman Ayman</h4>
+    </div>
+
+    <script>
+        // Fixed start date
+        const START_DATE = new Date('2026-02-25');
+
+        // IndexedDB setup
+        const DB_NAME = 'ArmyTrackerDB';
+        const DB_VERSION = 2; // Increased version for schema change
+        let db;
+
+        // History array - now for periods
+        let workPeriods = [];
+        let leavePeriods = [];
+        let history = []; // Keep for compatibility
+
+        // Initialize IndexedDB
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains('trackerData')) {
+                        db.createObjectStore('trackerData', { keyPath: 'id' });
+                    }
+                    // For version 2, we can migrate data if needed, but for now, just create
+                };
+            });
+        }
+
+        // Save data to IndexedDB
+        async function saveData() {
+            if (!db) return;
+
+            const data = {
+                id: 'main',
+                workPeriods: workPeriods,
+                leavePeriods: leavePeriods,
+                history: history
+            };
+
+            const transaction = db.transaction(['trackerData'], 'readwrite');
+            const store = transaction.objectStore('trackerData');
+            store.put(data);
+
+            return new Promise((resolve, reject) => {
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+            });
+        }
+
+        // Load data from IndexedDB
+        async function loadData() {
+            if (!db) return;
+
+            const transaction = db.transaction(['trackerData'], 'readonly');
+            const store = transaction.objectStore('trackerData');
+            const request = store.get('main');
+
+            return new Promise((resolve) => {
+                request.onsuccess = () => {
+                    if (request.result) {
+                        workPeriods = request.result.workPeriods || [];
+                        leavePeriods = request.result.leavePeriods || [];
+                        history = request.result.history || [];
+                        updateTotalsFromPeriods();
+                    }
+                    updateBalance();
+                    resolve();
+                };
+                request.onerror = () => resolve();
+            });
+        }
+
+        // Update totals from periods
+        function updateTotalsFromPeriods() {
+            const totalWork = workPeriods.reduce((sum, p) => sum + p.days, 0);
+            const totalLeave = leavePeriods.reduce((sum, p) => sum + p.days, 0);
+            document.getElementById('work-days-input').value = totalWork;
+            document.getElementById('leave-days-input').value = totalLeave;
+        }
+
+        // Calculate end date
+        function calculateEndDate(startDate, days) {
+            const start = new Date(startDate);
+            start.setDate(start.getDate() + days - 1); // -1 because inclusive
+            return start.toISOString().split('T')[0];
+        }
+
+        // Show add period modal
+        function showAddPeriodModal(type, editId = null) {
+            const modal = document.getElementById('add-period-modal');
+            const title = document.getElementById('modal-title');
+            const form = document.getElementById('add-period-form');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            form.dataset.type = type;
+            document.getElementById('edit-id').value = editId || '';
+            document.getElementById('edit-type').value = editId ? type : '';
+
+            if (editId) {
+                title.textContent = type === 'work' ? 'تعديل عمالة' : 'تعديل إجازة';
+                submitBtn.textContent = 'تحديث';
+
+                // Fill with existing data
+                const periods = type === 'work' ? workPeriods : leavePeriods;
+                const period = periods.find(p => p.id === editId);
+                if (period) {
+                    document.getElementById('period-name').value = period.name;
+                    document.getElementById('period-start').value = period.startDate;
+                    document.getElementById('period-days').value = period.days;
+                }
+            } else {
+                title.textContent = type === 'work' ? 'إضافة عمالة جديدة' : 'إضافة إجازة جديدة';
+                submitBtn.textContent = 'إضافة';
+
+                // Set default start date to today
+                document.getElementById('period-start').value = new Date().toISOString().split('T')[0];
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Hide add period modal
+        function hideAddPeriodModal() {
+            const modal = document.getElementById('add-period-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('add-period-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('edit-type').value = '';
+        }
+
+        // Add new period
+        async function addNewPeriod(type, name, startDate, days) {
+            const editId = document.getElementById('edit-id').value;
+            const editType = document.getElementById('edit-type').value;
+
+            const endDate = calculateEndDate(startDate, days);
+            const period = {
+                id: editId ? parseInt(editId) : Date.now(),
+                name: name,
+                startDate: startDate,
+                days: days,
+                endDate: endDate
+            };
+
+            if (editId && editType) {
+                // Editing existing period
+                if (editType === 'work') {
+                    const index = workPeriods.findIndex(p => p.id === parseInt(editId));
+                    if (index !== -1) workPeriods[index] = period;
+                } else {
+                    const index = leavePeriods.findIndex(p => p.id === parseInt(editId));
+                    if (index !== -1) leavePeriods[index] = period;
+                }
+            } else {
+                // Adding new period
+                if (type === 'work') {
+                    workPeriods.push(period);
+                } else {
+                    leavePeriods.push(period);
+                }
+            }
+
+            await saveData();
+            updateTotalsFromPeriods();
+            updateBalance();
+            hideAddPeriodModal();
+        }
+
+        // Delete period
+        async function deletePeriod(type, id) {
+            if (confirm('هل أنت متأكد من حذف هذه الفترة؟')) {
+                if (type === 'work') {
+                    workPeriods = workPeriods.filter(p => p.id !== id);
+                } else {
+                    leavePeriods = leavePeriods.filter(p => p.id !== id);
+                }
+                await saveData();
+                updateTotalsFromPeriods();
+                updateBalance();
+                showHistory(); // Refresh the list
+            }
+        }
+
+        // Edit period
+        function editPeriod(type, id) {
+            showAddPeriodModal(type, id);
+        }
+
+        // Format Arabic date
+        function formatArabicDate(date) {
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            return date.toLocaleDateString('ar-EG', options);
+        }
+
+        // Calculate days between two dates (inclusive)
+        function daysBetween(start, end) {
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return diffDays;
+        }
+
+        // Update current date display
+        function updateCurrentDateDisplay() {
+            const now = new Date();
+
+            // English format
+            document.getElementById('current-date').innerHTML = `
+                ${now.getDate()} / ${now.getMonth() + 1} / ${now.getFullYear()}
+            `;
+
+            // Arabic full name
+            document.getElementById('current-date-ar').textContent = formatArabicDate(now);
+
+            // Days since start
+            const totalDays = daysBetween(START_DATE, now);
+            document.getElementById('days-since-start').innerHTML = `
+                <span class="text-emerald-400">مضى من الخدمة:</span> 
+                <span class="font-bold text-2xl">${totalDays} يوم</span>
+            `;
+
+            // Update total service days (same as above)
+            document.getElementById('total-service-days').textContent = totalDays;
+        }
+
+        // Add days to work or leave + record in history
+        async function addDays(type, amount) {
+            const workInput = document.getElementById('work-days-input');
+            const leaveInput = document.getElementById('leave-days-input');
+
+            if (type === 'work') {
+                workInput.value = parseInt(workInput.value || 0) + amount;
+            } else {
+                leaveInput.value = parseInt(leaveInput.value || 0) + amount;
+            }
+
+            // Record in history
+            const now = new Date();
+            history.unshift({
+                date: now.toISOString(),
+                type: type,
+                amount: amount,
+                text: type === 'work' ? `+${amount} يوم عمالة` : `+${amount} يوم إجازة`
+            });
+
+            // Keep only last 20 entries
+            if (history.length > 20) history.pop();
+
+            await saveData();
+            updateBalance();
+
+            // Nice animation
+            const btns = document.querySelectorAll('button');
+            btns.forEach(b => {
+                if (b.textContent.includes(amount)) {
+                    b.classList.add('scale-110');
+                    setTimeout(() => b.classList.remove('scale-110'), 300);
+                }
+            });
+        }
+
+        // Main balance calculator
+        async function updateBalance() {
+            const work = parseInt(document.getElementById('work-days-input').value) || 0;
+            const leave = parseInt(document.getElementById('leave-days-input').value) || 0;
+            const diff = work - leave;
+
+            const balanceMain = document.getElementById('balance-main');
+            const balanceText = document.getElementById('balance-text');
+            const balanceSub = document.getElementById('balance-sub');
+
+            if (diff > 0) {
+                // You have leave days owed
+                balanceMain.innerHTML = `+${diff} <span class="text-4xl sm:text-5xl">🏖️</span>`;
+                balanceText.innerHTML = `<span class="text-emerald-400">ليك</span> ${diff} أيام إجازة`;
+                balanceSub.textContent = `عند الظابط (لأنك عملت ${work} وخدت ${leave} إجازة)`;
+                balanceMain.className = 'text-5xl sm:text-6xl md:text-7xl font-bold mb-4 text-emerald-400 balance-positive';
+            }
+            else if (diff < 0) {
+                // Officer has work days owed
+                const owed = Math.abs(diff);
+                balanceMain.innerHTML = `+${owed} <span class="text-4xl sm:text-5xl">🪖</span>`;
+                balanceText.innerHTML = `الظابط ليه ${owed} أيام عمالة`;
+                balanceSub.textContent = `عندك (لأنك عملت ${work} وخدت ${leave} إجازة)`;
+                balanceMain.className = 'text-5xl sm:text-6xl md:text-7xl font-bold mb-4 text-amber-400';
+            }
+            else {
+                balanceMain.innerHTML = `✅ <span class="text-4xl sm:text-5xl">⚖️</span>`;
+                balanceText.textContent = 'الحساب متعادل تماماً';
+                balanceSub.textContent = 'عملت وخدت نفس عدد الأيام';
+                balanceMain.className = 'text-5xl sm:text-6xl md:text-7xl font-bold mb-4 text-white';
+            }
+
+            await saveData();
+        }
+
+        // Reset everything
+        async function resetAll() {
+            if (confirm('هل أنت متأكد إنك عايز تمسح كل البيانات والسجل؟')) {
+                // Clear IndexedDB
+                if (db) {
+                    const transaction = db.transaction(['trackerData'], 'readwrite');
+                    const store = transaction.objectStore('trackerData');
+                    store.delete('main');
+                }
+
+                workPeriods = [];
+                leavePeriods = [];
+                history = [];
+                document.getElementById('work-days-input').value = 0;
+                document.getElementById('leave-days-input').value = 0;
+                updateBalance();
+                hideHistory();
+            }
+        }
+
+        // Show history modal
+        function showHistory() {
+            const modal = document.getElementById('history-modal');
+            const list = document.getElementById('history-list');
+
+            list.innerHTML = '';
+
+            // Show work periods
+            if (workPeriods.length > 0) {
+                list.innerHTML += '<h4 class="text-amber-400 font-semibold mb-3">فترات العمالة</h4>';
+                workPeriods.forEach(period => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-white/5 p-4 rounded-2xl border-l-4 border-amber-400 mb-3';
+                    item.innerHTML = `
+                        <div class="flex-1">
+                            <span class="font-medium">${period.name}</span>
+                            <div class="text-xs text-slate-400 mt-1">
+                                من ${period.startDate} إلى ${period.endDate} (${period.days} يوم)
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editPeriod('work', ${period.id})" class="text-amber-400 hover:text-amber-300">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deletePeriod('work', ${period.id})" class="text-red-400 hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            // Show leave periods
+            if (leavePeriods.length > 0) {
+                list.innerHTML += '<h4 class="text-emerald-400 font-semibold mb-3 mt-6">فترات الإجازة</h4>';
+                leavePeriods.forEach(period => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-white/5 p-4 rounded-2xl border-l-4 border-emerald-400 mb-3';
+                    item.innerHTML = `
+                        <div class="flex-1">
+                            <span class="font-medium">${period.name}</span>
+                            <div class="text-xs text-slate-400 mt-1">
+                                من ${period.startDate} إلى ${period.endDate} (${period.days} يوم)
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editPeriod('leave', ${period.id})" class="text-emerald-400 hover:text-emerald-300">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deletePeriod('leave', ${period.id})" class="text-red-400 hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            if (workPeriods.length === 0 && leavePeriods.length === 0) {
+                list.innerHTML = `<p class="text-center py-12 text-slate-400">مفيش فترات بعد... ابدأ بإضافة فترات جديدة!</p>`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function hideHistory() {
+            const modal = document.getElementById('history-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Main initialization
+        async function initializeApp() {
+            // Initialize IndexedDB first
+            try {
+                await initDB();
+                await loadData();
+            } catch (error) {
+                console.error('Error initializing database:', error);
+            }
+
+            // Update date immediately
+            updateCurrentDateDisplay();
+
+            // Update date every 60 seconds (in case page stays open all day)
+            setInterval(updateCurrentDateDisplay, 60000);
+
+            // Add form event listener
+            document.getElementById('add-period-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const type = this.dataset.type;
+                const name = document.getElementById('period-name').value;
+                const startDate = document.getElementById('period-start').value;
+                const days = parseInt(document.getElementById('period-days').value);
+                addNewPeriod(type, name, startDate, days);
+            });
+
+            console.log('%c✅ برنامج حساب أيام الجيش جاهز ويعمل أوتوماتيكي 100%', 'color:#10b981; font-size:13px; font-weight:bold');
+            console.log('بدأت الخدمة: 25/2/2026 | اليوم: ' + new Date().toLocaleDateString('ar-EG'));
+        }
+
+        // Start the app
+        window.onload = initializeApp;
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "army-tracker",
+  "version": "1.0.0",
+  "description": "Military service day tracker",
+  "scripts": {
+    "build-css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch",
+    "build-css-prod": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.31",
+    "autoprefixer": "^10.4.16"
+  }
+}
